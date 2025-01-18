@@ -10,19 +10,20 @@ volumes:
 services:
   snort:
     image: mfscy/snort-base:3.3.4.0-debian-12.6
+    restart: unless-stopped
     network_mode: host
     environment:
-      - SNORT_OINKCODE=
-      - NETWORK_INTERFACE=eth0
-      - DOWNLOAD_RULES=false
-      - SNORT_COMPRESSED_RULES_FILE_PATH=
-      - COMMUNITY_RULESET=false
-      - REGISTERED_RULESET=false
-      - LIGHTSPD_RULESET=false
-      - SNORT_BLOCKLIST=false
-      - ET_BLOCKLIST=false
-      - BLOCKLIST_URLS=
-      - IPS_POLICY=balanced
+      SNORT_OINKCODE:
+      NETWORK_INTERFACE: eth0
+      DOWNLOAD_RULES: false
+      SNORT_COMPRESSED_RULES_FILE_PATH:
+      COMMUNITY_RULESET: false
+      REGISTERED_RULESET: false
+      LIGHTSPD_RULESET: false
+      SNORT_BLOCKLIST: false
+      ET_BLOCKLIST: false
+      BLOCKLIST_URLS:
+      IPS_POLICY: balanced
     volumes:
       - snort_log:/var/log/snort:rw
       - snort_data:/usr/local/etc/snort3
@@ -31,7 +32,7 @@ services:
       mode: replicated
       replicas: 1
       restart_policy:
-        condition: on-failure
+        condition: unless-stopped
         max_attempts: 3
         delay: 10s
       placement:
@@ -50,28 +51,35 @@ services:
 # String/text `<sensor-id>` will be replaced with content from SENSOR_ID env var
 #
 
-  # snort-parser:
-  #   image: mfscy/snort3-parser:1.1
-  #   depends_on:
-  #     - snort
-  #   restart: always
-  #   environment:
-  #     - MQTT_HOST=192.168.1.1
-  #     - MQTT_PORT=1883
-  #     - MQTT_USERNAME=mataelang
-  #     - MQTT_PASSWORD=mataelang
-  #     - MAX_PCAP_FILES=5
-  #     - SENSOR_ID=<machine-id>
-  #     - MQTT_TOPIC=mataelang/sensor/v3/<sensor-id>
-  #     - SNORT_ALERT_FILE_PATH=/var/log/snort/alert_json.txt
-  #   volumes:
-  #     - /etc/machine-id:/etc/machine-id:ro
-  #     - snort_data:/var/log/snort:rw
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: '0.25'
-  #         memory: 25M
-  #       reservations:
-  #         cpus: '0.15'
-  #         memory: 15M
+  snort-parser:
+    image: mfscy/snort3-parser:2
+    restart: unless-stopped
+    command: "client -v"
+    depends_on:
+      - snort
+    environment:
+      MES_CLIENT_FILE: /var/log/snort/alert_json.txt
+      MES_CLIENT_SERVER: 172.17.0.1
+      MES_CLIENT_PORT: 50051
+      MES_CLIENT_INSECURE: "true"
+      MES_CLIENT_SENSOR_ID: 
+      MES_CLIENT_INTERVAL: 1s
+      MES_CLIENT_MAX_CLIENTS: 10
+      MES_SERVER_MAX_MESSAGE_SIZE: 1024
+    volumes:
+      - /etc/machine-id:/etc/machine-id:ro
+      - snort_log:/var/log/snort:rw
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: unless-stopped
+        max_attempts: 3
+        delay: 10s
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
