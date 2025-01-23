@@ -16,7 +16,7 @@ services:
       SNORT_OINKCODE:
       NETWORK_INTERFACE: eth0
       DOWNLOAD_RULES: false
-      SNORT_COMPRESSED_RULES_FILE_PATH:
+      SNORT_COMPRESSED_RULES_FILE_PATH: #if you have have rules.zip at directory rules give value /tmp/rules
       COMMUNITY_RULESET: false
       REGISTERED_RULESET: false
       LIGHTSPD_RULESET: false
@@ -33,11 +33,7 @@ services:
       replicas: 1
       restart_policy:
         condition: unless-stopped
-        max_attempts: 3
         delay: 10s
-      placement:
-        constraints:
-          - node.role == manager
       resources:
         limits:
           cpus: "1"
@@ -63,9 +59,6 @@ services:
       MES_CLIENT_PORT: 50051
       MES_CLIENT_INSECURE: "true"
       MES_CLIENT_SENSOR_ID: 
-      MES_CLIENT_INTERVAL: 1s
-      MES_CLIENT_MAX_CLIENTS: 10
-      MES_SERVER_MAX_MESSAGE_SIZE: 1024
     volumes:
       - /etc/machine-id:/etc/machine-id:ro
       - snort_log:/var/log/snort:rw
@@ -74,11 +67,7 @@ services:
       replicas: 1
       restart_policy:
         condition: unless-stopped
-        max_attempts: 3
         delay: 10s
-      placement:
-        constraints:
-          - node.role == manager
       resources:
         limits:
           cpus: "1"
