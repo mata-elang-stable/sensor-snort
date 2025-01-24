@@ -13,9 +13,9 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      SNORT_OINKCODE: c9b264eaa0cb91aec80c12768022d2ba350c4f9a
-      NETWORK_INTERFACE: lo
-      DOWNLOAD_RULES: true
+      SNORT_OINKCODE: 
+      NETWORK_INTERFACE: eth0
+      DOWNLOAD_RULES: false
       SNORT_COMPRESSED_RULES_FILE_PATH: #if you have have rules.zip at directory rules give value /tmp/rules
       COMMUNITY_RULESET: false
       REGISTERED_RULESET: false
