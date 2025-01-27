@@ -13,7 +13,7 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      SNORT_OINKCODE:
+      SNORT_OINKCODE: 
       NETWORK_INTERFACE: eth0
       DOWNLOAD_RULES: false
       SNORT_COMPRESSED_RULES_FILE_PATH: #if you have have rules.zip at directory rules give value /tmp/rules
@@ -26,6 +26,7 @@ services:
       IPS_POLICY: balanced
     volumes:
       - snort_log:/var/log/snort:rw
+      - ./local.rules:/usr/local/etc/snort3/rules/local.rules
       - snort_data:/usr/local/etc/snort3
       - ./rules:/tmp/rules
     deploy:
