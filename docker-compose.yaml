@@ -1,31 +1,45 @@
-version: "3"
-
 volumes:
+  snort_log:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: size=1g,uid=1000
   snort_data:
 
 services:
   snort:
-    build: 
-      context: ./
-      ## Please uncomment if you'd prefer to use the locally downloaded rule instead of the downloaded version
-      # dockerfile: snort/offline.Dockerfile
-      # args:
-        # RULE_FILENAME: snortrules-snapshot-31470.tar.gz
+    image: mfscy/snort-base:3.3.4.0-debian-12.6
+    restart: unless-stopped
     network_mode: host
-    restart: always
     environment:
-      - NETWORK_INTERFACE=eth0
+      SNORT_OINKCODE: 
+      NETWORK_INTERFACE: eth0
+      DOWNLOAD_RULES: false
+      SNORT_COMPRESSED_RULES_FILE_PATH: #if you have have rules.zip at directory rules give value /tmp/rules
+      COMMUNITY_RULESET: false
+      REGISTERED_RULESET: false
+      LIGHTSPD_RULESET: false
+      SNORT_BLOCKLIST: false
+      ET_BLOCKLIST: false
+      BLOCKLIST_URLS:
+      IPS_POLICY: balanced
     volumes:
-      - ./snort/snort.lua:/usr/local/etc/snort/snort.lua:ro
-      - snort_data:/var/log/snort:rw
+      - snort_log:/var/log/snort:rw
+      - ./local.rules:/usr/local/etc/snort3/rules/local.rules
+      - snort_data:/usr/local/etc/snort3
+      - ./rules:/tmp/rules
     deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: unless-stopped
+        delay: 10s
       resources:
         limits:
-          cpus: '1'
+          cpus: "1"
           memory: 512M
-        reservations:
-          cpus: '0.7'
-          memory: 256M
+
 
 ###########################
 #         Note            #
@@ -35,27 +49,27 @@ services:
 #
 
   snort-parser:
-    image: mataelang/snort3-parser:1.1
+    image: mfscy/snort3-parser:2
+    restart: unless-stopped
+    command: "client -v"
     depends_on:
       - snort
-    restart: always
     environment:
-      - MQTT_HOST=192.168.1.1
-      - MQTT_PORT=1883
-      - MQTT_USERNAME=mataelang
-      - MQTT_PASSWORD=mataelang
-      - MAX_PCAP_FILES=5
-      - SENSOR_ID=<machine-id>
-      - MQTT_TOPIC=mataelang/sensor/v3/<sensor-id>
-      - SNORT_ALERT_FILE_PATH=/var/log/snort/alert_json.txt
+      MES_CLIENT_FILE: /var/log/snort/alert_json.txt
+      MES_CLIENT_SERVER: 172.17.0.1
+      MES_CLIENT_PORT: 50051
+      MES_CLIENT_INSECURE: "true"
+      MES_CLIENT_SENSOR_ID: 
     volumes:
       - /etc/machine-id:/etc/machine-id:ro
-      - snort_data:/var/log/snort:rw
+      - snort_log:/var/log/snort:rw
     deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: unless-stopped
+        delay: 10s
       resources:
         limits:
-          cpus: '0.25'
-          memory: 25M
-        reservations:
-          cpus: '0.15'
-          memory: 15M
+          cpus: "1"
+          memory: 512M
